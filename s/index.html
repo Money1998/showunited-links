@@ -51,6 +51,22 @@
             color: white;
             text-decoration: underline;
         }
+        .open-button {
+            margin-top: 1rem;
+            padding: 12px 24px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid white;
+            border-radius: 8px;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .open-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
     </style>
 </head>
 <body>
@@ -60,7 +76,8 @@
         <p>Please wait...</p>
         <div class="fallback" id="fallback" style="display: none;">
             <p>If the app doesn't open automatically:</p>
-            <p>
+            <a href="#" id="openAppButton" class="open-button">Open App</a>
+            <p style="margin-top: 1rem;">
                 <a href="#" id="androidLink">Download for Android</a> | 
                 <a href="#" id="iosLink">Download for iOS</a>
             </p>
@@ -94,25 +111,67 @@
         document.getElementById('androidLink').href = androidStoreLink;
         document.getElementById('iosLink').href = iosStoreLink;
         
-        // Try to open the app immediately
-        window.location.href = deepLink;
+        // Function to open deep link using multiple methods
+        function openDeepLink() {
+            console.log('Attempting to open deep link:', deepLink);
+            
+            // Method 1: Create and click an <a> tag (most reliable)
+            const link = document.createElement('a');
+            link.href = deepLink;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Method 2: Try window.location (fallback)
+            setTimeout(() => {
+                try {
+                    window.location.href = deepLink;
+                } catch (e) {
+                    console.log('window.location failed:', e);
+                }
+            }, 100);
+            
+            // Method 3: Try window.open (fallback)
+            setTimeout(() => {
+                try {
+                    window.open(deepLink, '_blank');
+                } catch (e) {
+                    console.log('window.open failed:', e);
+                }
+            }, 200);
+        }
         
-        // Show fallback after 2.5 seconds if app didn't open
+        // Set up manual open button
+        document.getElementById('openAppButton').href = deepLink;
+        document.getElementById('openAppButton').onclick = function(e) {
+            e.preventDefault();
+            openDeepLink();
+            return false;
+        };
+        
+        // Try to open the app immediately on page load
+        openDeepLink();
+        
+        // Show fallback after 1.5 seconds
         setTimeout(() => {
             document.getElementById('fallback').style.display = 'block';
-            
-            // Redirect to app store if app still not opened after 3 seconds
-            setTimeout(() => {
-                if (isAndroid) {
-                    window.location.href = androidStoreLink;
-                } else if (isIOS) {
-                    window.location.href = iosStoreLink;
-                } else {
-                    // Desktop - just show the fallback
-                    document.getElementById('fallback').style.display = 'block';
+        }, 1500);
+        
+        // Redirect to app store after 4 seconds if on mobile (app likely not installed)
+        setTimeout(() => {
+            if (isAndroid || isIOS) {
+                // Only redirect if we're still on the page (app didn't open)
+                if (document.visibilityState === 'visible') {
+                    console.log('Redirecting to app store...');
+                    if (isAndroid) {
+                        window.location.href = androidStoreLink;
+                    } else if (isIOS) {
+                        window.location.href = iosStoreLink;
+                    }
                 }
-            }, 3000);
-        }, 2500);
+            }
+        }, 4000);
         
         // Track page view (optional - if you have analytics)
         if (typeof gtag !== 'undefined') {
